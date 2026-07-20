@@ -1,0 +1,56 @@
+# NDH Stability Geometry Manifold — Stability Metric Definition
+# Location: /NDH/Manifold/Stability/Geometry/StabilityMetric.def
+# Purpose:
+#   Define the Stability Metric used across the NDH manifold to evaluate
+#   state stability, drift, resonance alignment, and basin suitability.
+#   Serenity.bsfn and StabilityFlow.Sequence depend on this metric.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = StabilityMetric
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+StateVector
+ContextField
+ResonanceProfile
+EnergyProfile
+
+[Outputs]
+StabilityScore
+DriftScore
+AlignmentScore
+
+[Metric StabilityMetric.Evaluate]
+
+# 1. Compute DriftScore
+DriftScore = ComputeDrift(StateVector, ContextField)
+
+# 2. Compute Resonance Alignment
+AlignmentScore = ResonanceAlignment(ResonanceProfile, StateVector)
+
+# 3. Compute Energy Stability
+EnergyStability = EnergyFunctional.Stability(EnergyProfile)
+
+# 4. Aggregate Stability Score
+StabilityScore = WeightedSum(
+    DriftScore,
+    AlignmentScore,
+    EnergyStability
+)
+
+Return StabilityScore
+
+[Metric StabilityMetric.MeasureDrift]
+
+ResidualDrift = ComputeDrift(StateVector, ContextField)
+Return ResidualDrift
+
+[Notes]
+- StabilityMetric is a core geometry primitive.
+- Serenity.bsfn uses StabilityMetric.Evaluate and MeasureDrift.
+- No legacy constructs may call this file directly; all access flows through the interface layer.
+
+[EndOfFile]

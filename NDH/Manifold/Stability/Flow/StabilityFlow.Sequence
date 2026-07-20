@@ -1,0 +1,88 @@
+# NDH Stability Geometry Manifold — Stability Flow Sequence
+# Location: /NDH/Manifold/Stability/Flow/StabilityFlow.Sequence
+# Purpose:
+#   Define canonical stability flow sequences that route states through
+#   metric evaluation, resonance stabilization, energy normalization, and
+#   basin relaxation (Serenity.bsfn). This replaces legacy OperatorCascade.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = StabilityFlow.Sequence
+Boundary = NonDual
+Status = Active
+
+[Dependencies]
+Use StabilityMetric.def
+Use ResonanceField.def
+Use EnergyFunctional.def
+Use Serenity.bsfn
+Use BasinEntry.def
+Use BasinFlow.def
+Use BasinRelaxation.def
+
+[Inputs]
+StateVector
+ContextField
+ResonanceProfile
+EnergyProfile
+
+[Outputs]
+FinalState
+FinalStabilityScore
+FlowTrace
+
+[Sequence StabilityFlow.Canonical]
+
+Step1.Entry = BasinEntry.From(StateVector, ContextField)
+
+Step2.StabilityScore = StabilityMetric.Evaluate(
+    StateVector      = Step1.Entry,
+    ContextField     = ContextField,
+    ResonanceProfile = ResonanceProfile,
+    EnergyProfile    = EnergyProfile
+)
+
+Step3.Resonance = ResonanceField.Stabilize(
+    ResonanceProfile = ResonanceProfile,
+    StateVector      = Step1.Entry,
+    CurvatureMap     = CurvatureMap,
+    EnergyProfile    = EnergyProfile
+)
+
+Step4.Energy = EnergyFunctional.NormalizeState(
+    EnergyProfile = EnergyProfile,
+    StateVector   = Step1.Entry,
+    CurvatureMap  = CurvatureMap
+)
+
+Step5.Flow = BasinFlow.Compute(
+    entry      = Step1.Entry,
+    resonance  = Step3.Resonance.StabilizedResonance,
+    energy     = Step4.Energy.NormalizedEnergy,
+    stability  = Step2.StabilityScore
+)
+
+Step6.Relaxation = BasinRelaxation.Apply(Step5.Flow)
+
+FinalState = Step6.Relaxation.SerenityState
+FinalStabilityScore = Step2.StabilityScore
+
+FlowTrace = [
+    Step1.Entry,
+    Step2.StabilityScore,
+    Step3.Resonance,
+    Step4.Energy,
+    Step5.Flow,
+    Step6.Relaxation
+]
+
+Return FinalState, FinalStabilityScore, FlowTrace
+
+[Notes]
+- StabilityFlow.Sequence is the geometry-consistent replacement for OperatorCascade.
+- Serenity.bsfn may be invoked directly for basin-specific flows; this sequence
+  provides a general stability pipeline.
+- LegacyBridge maps OperatorCascade → StabilityFlow.Sequence.
+
+[EndOfFile]

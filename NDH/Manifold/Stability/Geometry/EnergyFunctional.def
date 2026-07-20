@@ -1,0 +1,69 @@
+# NDH Stability Geometry Manifold — Energy Functional Definition
+# Location: /NDH/Manifold/Stability/Geometry/EnergyFunctional.def
+# Purpose:
+#   Define the energy-functional geometry responsible for normalizing,
+#   stabilizing, and evaluating energy distributions across the NDH manifold.
+#   Serenity.bsfn uses this functional to reduce chaotic variance and support
+#   basin relaxation.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = EnergyFunctional
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+EnergyProfile        # distribution of energy across cognitive axes
+StateVector          # current manifold position
+CurvatureMap         # local curvature influencing energy flow
+
+[Outputs]
+NormalizedEnergy     # energy profile after normalization
+EnergyStability      # scalar stability measure
+EnergyDrift          # residual energy drift
+
+[Function EnergyFunctional.NormalizeState]
+
+# 1. Curvature-Aware Redistribution
+RedistributedEnergy = ApplyCurvatureFlow(
+    energy    = EnergyProfile,
+    curvature = CurvatureMap
+)
+
+# 2. Variance Reduction
+ReducedVariance = ReduceEnergyVariance(
+    energy = RedistributedEnergy
+)
+
+# 3. Drift Minimization
+EnergyDrift = ComputeEnergyDrift(
+    energy = ReducedVariance,
+    state  = StateVector
+)
+
+# 4. Final Normalization
+NormalizedEnergy = NormalizeDistribution(
+    energy = ReducedVariance,
+    drift  = EnergyDrift
+)
+
+Return NormalizedEnergy, EnergyDrift
+
+[Function EnergyFunctional.Stability]
+
+EnergyStability = ComputeEnergyStability(
+    energy    = EnergyProfile,
+    curvature = CurvatureMap,
+    state     = StateVector
+)
+
+Return EnergyStability
+
+[Notes]
+- EnergyFunctional is a core stability-geometry primitive.
+- Serenity.bsfn uses NormalizeState and Stability.
+- StabilityMetric uses EnergyFunctional.Stability for scoring.
+- Legacy code must never call this file directly; all access flows through the interface layer.
+
+[EndOfFile]

@@ -1,0 +1,65 @@
+# NDH Stability Geometry Manifold — Basin Topology Definition
+# Location: /NDH/Manifold/Stability/Geometry/BasinTopology.def
+# Purpose:
+#   Define the structural topology of stability basins within the NDH manifold.
+#   BasinTopology describes attractor layout, curvature class, boundary
+#   transitions, and basin geometry used by BasinEntry, BasinFlow, and
+#   Serenity.bsfn.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = BasinTopology
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+StateVector            # current manifold position
+CurvatureMap           # local curvature tensor
+EnergyProfile          # energy distribution influencing topology
+ResonanceProfile       # oscillatory amplitudes affecting basin shape
+
+[Outputs]
+TopologyClass          # classification of basin geometry
+AttractorMap           # attractor layout within the basin
+BoundarySet            # boundary conditions for basin transitions
+TopologySignature      # canonical signature for routing
+
+[Function BasinTopology.Compute]
+
+# 1. Determine TopologyClass
+TopologyClass = ClassifyTopology(
+    curvature = CurvatureMap.LocalCurvature,
+    energy    = EnergyProfile,
+    resonance = ResonanceProfile
+)
+
+# 2. Generate AttractorMap
+AttractorMap = ComputeAttractors(
+    topology  = TopologyClass,
+    curvature = CurvatureMap.LocalCurvature
+)
+
+# 3. Compute BoundarySet
+BoundarySet = ComputeBoundaries(
+    topology  = TopologyClass,
+    gradient  = CurvatureMap.CurvatureGradient
+)
+
+# 4. Generate TopologySignature
+TopologySignature = HashSignature(
+    topology  = TopologyClass,
+    attractor = AttractorMap,
+    boundary  = BoundarySet
+)
+
+Return TopologyClass, AttractorMap, BoundarySet, TopologySignature
+
+[Notes]
+- BasinTopology defines the structural geometry of Serenity and other basins.
+- BasinEntry uses topology implicitly through curvature and drift.
+- BasinFlow uses topology to shape flow vectors.
+- Serenity.bsfn uses topology to determine relaxation behavior.
+- Legacy constructs must never call BasinTopology directly.
+
+[EndOfFile]

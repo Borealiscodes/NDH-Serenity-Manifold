@@ -1,0 +1,64 @@
+# NDH Stability Geometry Manifold — Basin Entry Definition
+# Location: /NDH/Manifold/Stability/BasinFunctions/BasinEntry.def
+# Purpose:
+#   Define the canonical entry point into stability basins. BasinEntry computes
+#   the initial geometry, drift, and resonance context required for basin flow
+#   and Serenity relaxation. This is the first step in all basin transitions.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = BasinEntry
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+StateVector          # incoming cognitive/phenomenological state
+ContextField         # environmental / narrative context
+ResonanceProfile     # oscillatory amplitudes at entry
+EnergyProfile        # energy distribution at entry
+
+[Outputs]
+EntryVector          # geometry-adjusted entry vector
+EntryDrift           # drift present at basin entry
+EntryCurvature       # local curvature at entry point
+EntrySignature       # canonical signature for basin routing
+
+[Function BasinEntry.From]
+
+# 1. Compute EntryCurvature
+EntryCurvature = CurvatureMap.Compute(
+    StateVector      = StateVector,
+    ContextField     = ContextField,
+    EnergyProfile    = EnergyProfile,
+    ResonanceProfile = ResonanceProfile
+).LocalCurvature
+
+# 2. Compute EntryDrift
+EntryDrift = StabilityMetric.MeasureDrift(
+    StateVector  = StateVector,
+    ContextField = ContextField
+)
+
+# 3. Construct EntryVector
+EntryVector = CombineVectors(
+    StateVector,
+    EntryCurvature,
+    EntryDrift
+)
+
+# 4. Generate EntrySignature
+EntrySignature = HashSignature(
+    vector    = EntryVector,
+    curvature = EntryCurvature,
+    drift     = EntryDrift
+)
+
+Return EntryVector, EntryDrift, EntryCurvature, EntrySignature
+
+[Notes]
+- BasinEntry is the first step in Serenity.bsfn and StabilityFlow.Sequence.
+- EntrySignature ensures consistent routing across basin functions.
+- Legacy constructs must never call BasinEntry directly; all access flows through the interface layer.
+
+[EndOfFile]

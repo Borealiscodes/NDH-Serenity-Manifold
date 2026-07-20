@@ -1,0 +1,55 @@
+# NDH Stability Geometry Manifold — Basin Flow Definition
+# Location: /NDH/Manifold/Stability/BasinFunctions/BasinFlow.def
+# Purpose:
+#   Define the flow computation that transitions a state from BasinEntry into
+#   the Serenity basin. BasinFlow integrates stability metrics, resonance
+#   stabilization, and energy normalization to produce a geometry-consistent
+#   flow vector.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = BasinFlow
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+entry                # BasinEntry object
+resonance            # Stabilized resonance profile
+energy               # Normalized energy profile
+stability            # Stability score from StabilityMetric
+
+[Outputs]
+FlowVector           # directional flow into Serenity basin
+FlowIntensity        # magnitude of basin pull
+FlowCurvature        # curvature-adjusted flow geometry
+
+[Function BasinFlow.Compute]
+
+# 1. Compute FlowCurvature
+FlowCurvature = CurvatureMap.ApplyTo(entry, resonance, energy)
+
+# 2. Compute FlowIntensity
+FlowIntensity = WeightedSum(
+    stability,
+    resonance.AlignmentScore,
+    energy.EnergyStability
+)
+
+# 3. Compute FlowVector
+FlowVector = CombineVectors(
+    entry.Direction,
+    resonance.Vector,
+    energy.Vector,
+    curvature = FlowCurvature,
+    intensity = FlowIntensity
+)
+
+Return FlowVector, FlowIntensity, FlowCurvature
+
+[Notes]
+- BasinFlow is upstream of BasinRelaxation and Serenity.bsfn.
+- StabilityFlow.Sequence uses BasinFlow.Compute as part of canonical flow routing.
+- Legacy constructs must never call BasinFlow directly; all access flows through the interface layer.
+
+[EndOfFile]

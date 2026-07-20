@@ -1,0 +1,66 @@
+# NDH Stability Geometry Manifold — Curvature Map Definition
+# Location: /NDH/Manifold/Stability/Geometry/CurvatureMap.def
+# Purpose:
+#   Define curvature geometry for the NDH manifold. CurvatureMap provides
+#   localized curvature values used to modulate resonance damping, energy
+#   redistribution, and basin flow shaping. It is a core geometric primitive.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = CurvatureMap
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+StateVector          # current position in the manifold
+ContextField         # environmental / narrative context
+EnergyProfile        # energy distribution influencing curvature
+ResonanceProfile     # oscillatory amplitudes affecting curvature response
+
+[Outputs]
+LocalCurvature       # curvature tensor at the given state
+CurvatureGradient    # directional gradient of curvature
+CurvatureInfluence   # scalar influence factor for damping & flow
+
+[Function CurvatureMap.Compute]
+
+# 1. Base Curvature from State
+BaseCurvature = ComputeBaseCurvature(StateVector)
+
+# 2. Contextual Adjustment
+ContextAdjusted = AdjustForContext(
+    curvature = BaseCurvature,
+    context   = ContextField
+)
+
+# 3. Energy-Weighted Curvature
+EnergyWeighted = WeightByEnergy(
+    curvature = ContextAdjusted,
+    energy    = EnergyProfile
+)
+
+# 4. Resonance Response
+ResonanceAdjusted = AdjustForResonance(
+    curvature = EnergyWeighted,
+    resonance = ResonanceProfile
+)
+
+# 5. Final Curvature Tensor
+LocalCurvature = NormalizeCurvatureTensor(ResonanceAdjusted)
+
+# 6. Curvature Gradient
+CurvatureGradient = ComputeCurvatureGradient(LocalCurvature)
+
+# 7. Influence Factor
+CurvatureInfluence = ComputeInfluence(LocalCurvature, CurvatureGradient)
+
+Return LocalCurvature, CurvatureGradient, CurvatureInfluence
+
+[Notes]
+- CurvatureMap is a core geometry primitive.
+- ResonanceField, EnergyFunctional, and BasinFlow all depend on curvature.
+- StabilityFlow.Sequence uses CurvatureMap for flow shaping.
+- Legacy constructs must never call CurvatureMap directly; all access flows through the interface layer.
+
+[EndOfFile]

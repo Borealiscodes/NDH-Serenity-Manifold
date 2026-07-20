@@ -1,0 +1,78 @@
+# NDH Stability Geometry Manifold — QuietApex Entity
+# Location: /NDH/Manifold/Stability/Entities/QuietApex.entity
+# Purpose:
+#   Define the QuietApex attractor, the upstream high-coherence state that
+#   precedes Serenity basin entry. QuietApex represents the apex of stability
+#   before basin transition, providing a canonical attractor for routing.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Entity = QuietApex
+Boundary = NonDual
+Status = Active
+
+[Attributes]
+CoherenceLevel        # scalar measure of apex coherence
+ApexCurvature         # curvature tensor at apex
+ApexSignature         # canonical attractor signature
+ApexVector            # directional vector toward Serenity basin
+
+[Inputs]
+StateVector
+ContextField
+EnergyProfile
+ResonanceProfile
+
+[Outputs]
+ApexState
+ApexVector
+ApexSignature
+
+[Function QuietApex.Compute]
+
+# 1. Compute ApexCurvature
+ApexCurvature = CurvatureMap.Compute(
+    StateVector      = StateVector,
+    ContextField     = ContextField,
+    EnergyProfile    = EnergyProfile,
+    ResonanceProfile = ResonanceProfile
+).LocalCurvature
+
+# 2. Compute CoherenceLevel
+CoherenceLevel = StabilityMetric.Evaluate(
+    StateVector      = StateVector,
+    ContextField     = ContextField,
+    ResonanceProfile = ResonanceProfile,
+    EnergyProfile    = EnergyProfile
+)
+
+# 3. Construct ApexVector
+ApexVector = CombineVectors(
+    StateVector,
+    ApexCurvature,
+    CoherenceLevel
+)
+
+# 4. Generate ApexSignature
+ApexSignature = HashSignature(
+    curvature = ApexCurvature,
+    coherence = CoherenceLevel,
+    vector    = ApexVector
+)
+
+# 5. Final ApexState
+ApexState = CombineState(
+    baseState = StateVector,
+    apex      = ApexVector
+)
+
+Return ApexState, ApexVector, ApexSignature
+
+[Notes]
+- QuietApex is the upstream attractor feeding Serenity.bsfn.
+- BasinEntry may use ApexState as a pre-entry stabilization point.
+- StabilityFlow.Sequence uses QuietApex for high-stability routing.
+- Legacy constructs must never call QuietApex directly.
+
+[EndOfFile]

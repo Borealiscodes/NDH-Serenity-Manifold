@@ -1,0 +1,69 @@
+# NDH Stability Geometry Manifold — Basin Relaxation Definition
+# Location: /NDH/Manifold/Stability/BasinFunctions/BasinRelaxation.def
+# Purpose:
+#   Define relaxation dynamics that convert a basin flow vector into a stable
+#   Serenity basin state. BasinRelaxation applies curvature-aware damping,
+#   drift reduction, and stability-weighted smoothing to finalize the transition
+#   into Serenity.bsfn.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = BasinRelaxation
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+FlowVector            # directional flow into Serenity basin
+FlowIntensity         # magnitude of basin pull
+FlowCurvature         # curvature-adjusted flow geometry
+StateVector           # original state before basin transition
+
+[Outputs]
+SerenityState         # final stabilized basin state
+RelaxationDrift       # residual drift after relaxation
+RelaxationScore       # scalar measure of relaxation quality
+
+[Function BasinRelaxation.Apply]
+
+# 1. Curvature-Aware Damping
+DampedFlow = ApplyCurvatureDamping(
+    vector    = FlowVector,
+    curvature = FlowCurvature
+)
+
+# 2. Intensity-Weighted Smoothing
+SmoothedFlow = SmoothFlow(
+    vector    = DampedFlow,
+    intensity = FlowIntensity
+)
+
+# 3. Drift Reduction
+RelaxationDrift = ComputeRelaxationDrift(
+    flow  = SmoothedFlow,
+    state = StateVector
+)
+
+# 4. Final Serenity State
+SerenityState = CombineState(
+    baseState = StateVector,
+    flow      = SmoothedFlow,
+    drift     = RelaxationDrift
+)
+
+# 5. Relaxation Score
+RelaxationScore = EvaluateRelaxationQuality(
+    flow      = SmoothedFlow,
+    curvature = FlowCurvature,
+    drift     = RelaxationDrift
+)
+
+Return SerenityState, RelaxationDrift, RelaxationScore
+
+[Notes]
+- BasinRelaxation is the final step before Serenity.bsfn.
+- StabilityFlow.Sequence uses BasinRelaxation.Apply to complete the stability pipeline.
+- Legacy constructs must never call BasinRelaxation directly; all access flows through the interface layer.
+
+[EndOfFile]
+

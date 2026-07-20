@@ -1,0 +1,71 @@
+# NDH Stability Geometry Manifold — Serenity Basin Function
+# Location: /NDH/Manifold/Stability/BasinFunctions/Serenity.bsfn
+# Purpose:
+#   Define the Serenity basin function as the canonical attractor for
+#   high-stability states in the NDH manifold. Serenity.bsfn models how
+#   unstable or noisy cognitive states relax into a stable basin governed
+#   by StabilityMetric, ResonanceField, and EnergyFunctional.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Basin = Serenity
+Boundary = NonDual
+Status = Active
+
+[Dependencies]
+Use StabilityMetric.def
+Use ResonanceField.def
+Use EnergyFunctional.def
+Use BasinEntry.def
+Use BasinFlow.def
+Use BasinRelaxation.def
+
+[Inputs]
+StateVector      # current cognitive/phenomenological state
+ContextField     # environmental / narrative context
+ResonanceProfile # current resonance amplitudes
+EnergyProfile    # current energy distribution
+
+[Outputs]
+SerenityState    # stabilized state within Serenity basin
+ResidualDrift    # remaining drift after relaxation
+StabilityScore   # scalar stability metric for SerenityState
+
+[Function Serenity.Apply]
+
+# 1. Basin Entry
+SerenityEntry = BasinEntry.From(StateVector, ContextField)
+
+# 2. Compute Stability Metric
+StabilityScore = StabilityMetric.Evaluate(SerenityEntry, ResonanceProfile, EnergyProfile)
+
+# 3. Resonance Stabilization
+StabilizedResonance = ResonanceField.Stabilize(ResonanceProfile, SerenityEntry)
+
+# 4. Energy Normalization
+NormalizedEnergy = EnergyFunctional.NormalizeState(EnergyProfile, SerenityEntry)
+
+# 5. Basin Flow
+SerenityFlow = BasinFlow.Compute(
+    entry      = SerenityEntry,
+    resonance  = StabilizedResonance,
+    energy     = NormalizedEnergy,
+    stability  = StabilityScore
+)
+
+# 6. Relaxation into Basin
+SerenityState = BasinRelaxation.Apply(SerenityFlow)
+
+# 7. Residual Drift
+ResidualDrift = StabilityMetric.MeasureDrift(SerenityState, ContextField)
+
+Return SerenityState, ResidualDrift, StabilityScore
+
+[Notes]
+- Serenity.bsfn is the canonical basin function for NDH.
+- QuietApex is the upstream attractor feeding SerenityEntry.
+- This file must never be referenced directly by the legacy repo; all access
+  must go through the LegacyBridge interface layer.
+
+[EndOfFile]

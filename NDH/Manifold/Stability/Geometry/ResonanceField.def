@@ -1,0 +1,70 @@
+# NDH Stability Geometry Manifold — Resonance Field Definition
+# Location: /NDH/Manifold/Stability/Geometry/ResonanceField.def
+# Purpose:
+#   Define the resonance-field geometry responsible for stabilizing oscillatory
+#   amplitudes, aligning resonance profiles with manifold curvature, and
+#   preparing states for basin entry and Serenity relaxation.
+
+[Header]
+Version = 1.0
+Manifold = Stability
+Component = ResonanceField
+Boundary = NonDual
+Status = Active
+
+[Inputs]
+ResonanceProfile      # oscillatory amplitudes across cognitive axes
+StateVector           # current manifold position
+CurvatureMap          # local curvature of the stability manifold
+EnergyProfile         # energy distribution influencing resonance
+
+[Outputs]
+StabilizedResonance   # resonance profile after stabilization
+AlignmentScore        # scalar measure of resonance alignment
+ResonanceDrift        # residual oscillatory drift
+
+[Function ResonanceField.Stabilize]
+
+# 1. Curvature-Aware Damping
+DampedResonance = ApplyCurvatureDamping(
+    resonance = ResonanceProfile,
+    curvature = CurvatureMap
+)
+
+# 2. Energy-Weighted Alignment
+AlignedResonance = AlignWithEnergy(
+    resonance = DampedResonance,
+    energy    = EnergyProfile
+)
+
+# 3. Drift Reduction
+ResonanceDrift = ComputeResonanceDrift(
+    resonance = AlignedResonance,
+    state     = StateVector
+)
+
+# 4. Final Stabilization
+StabilizedResonance = ReduceOscillation(
+    resonance = AlignedResonance,
+    drift     = ResonanceDrift
+)
+
+Return StabilizedResonance, ResonanceDrift
+
+[Function ResonanceField.AlignmentScore]
+
+AlignmentScore = ComputeAlignmentMetric(
+    resonance = StabilizedResonance,
+    curvature = CurvatureMap,
+    state     = StateVector
+)
+
+Return AlignmentScore
+
+[Notes]
+- ResonanceField is a core stability-geometry primitive.
+- Serenity.bsfn uses ResonanceField.Stabilize for basin relaxation.
+- StabilityFlow.Sequence uses AlignmentScore for flow routing.
+- Legacy constructs must never call this file directly; all access flows through the interface layer.
+
+[EndOfFile]
